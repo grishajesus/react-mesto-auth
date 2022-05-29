@@ -1,0 +1,32 @@
+.header__user-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  color: white;
+}
+
+.header__user-info p {
+  font-size: 18px;
+}
+
+.header__user-info p:not(:last-child) {
+  margin-right: 24px;
+}
+
+.header__user-info a {
+  color: white;
+  line-height: 22px;
+  text-decoration: none;
+}
+
+.header__user-info a:hover {
+  text-decoration: underline;
+}
+
+.header__user-info_authorized a {
+  color: #a9a9a9;
+}
+
+.header__user-info_authorized a:hover {
+  color: white;
+}

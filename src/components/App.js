@@ -1,6 +1,8 @@
 import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Api from "../utils/api";
+import AuthApi from "../utils/auth-api";
 import CurrentUserContext from "../contexts/CurrentUserContext";
 import Header from "./Header";
 import Main from "./Main";
@@ -10,6 +12,9 @@ import EditProfilePopup from "./EditProfilePopup";
 import EditAvatarPopup from "./EditAvatarPopup";
 import AddPlacePopup from "./AddPlacePopup";
 import ImagePopup from "./ImagePopup";
+import ProtectedRoute from "./ProtectedRoute";
+import Login from "./Login";
+import Register from "./Register";
 
 const App = () => {
   const [isEditAvatarPopupOpen, setIsEditAvatarPopupOpen] =
@@ -20,7 +25,9 @@ const App = () => {
 
   const [isAddPlacePopupOpen, setisAddPlacePopupOpen] = React.useState(false);
 
-  const [currentUser, setCurrentUser] = React.useState({});
+  const [userLoading, setUserLoading] = React.useState(true);
+  const [currentUser, setCurrentUser] = React.useState(null);
+
   const [cards, setCards] = React.useState([]);
   const [selectedCard, setSelectedCard] = React.useState(null);
 
@@ -35,6 +42,40 @@ const App = () => {
     setisAddPlacePopupOpen(false);
 
     setSelectedCard(null);
+  };
+
+  const handleLogin = async (payload) => {
+    const { email, password } = payload;
+
+    try {
+      const response = await AuthApi.login(email, password);
+
+      if (response.token) {
+        localStorage.setItem("token", response.token);
+
+        const userResponse = await AuthApi.getCurrentUser();
+
+        setCurrentUser(userResponse.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleRegister = async (payload) => {
+    const { email, password } = payload;
+
+    try {
+      await AuthApi.register(email, password);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.setItem("token", null);
+
+    setCurrentUser(null);
   };
 
   const handleUpdateUser = async (data) => {
@@ -106,11 +147,15 @@ const App = () => {
   React.useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userData = await Api.getCurrentUser();
+        setUserLoading(true);
 
-        setCurrentUser(userData);
+        const response = await AuthApi.getCurrentUser();
+
+        setCurrentUser(response.data);
       } catch (error) {
         console.error("fetchUserData error", error);
+      } finally {
+        setUserLoading(false);
       }
     };
 
@@ -131,43 +176,82 @@ const App = () => {
     fetchCards();
   }, []);
 
+  if (userLoading) {
+    return null;
+  }
+
   return (
     <CurrentUserContext.Provider value={currentUser}>
-      <div className="root">
-        <Header />
-        <Main
-          cards={cards}
-          onCardLike={handleCardLike}
-          onCardDelete={handleCardDelete}
-          onEditAvatar={handleEditAvatarClick}
-          onEditProfile={handleEditProfileClick}
-          onAddPlace={handleAddPlaceClick}
-          onCardClick={handleCardClick}
-        />
-        <Footer />
+      <BrowserRouter>
+        <div className="root">
+          <Header onLogout={handleLogout} />
 
-        <EditProfilePopup
-          isOpen={isEditProfilePopupOpen}
-          onClose={closeAllPopups}
-          onUpdateUser={handleUpdateUser}
-        />
+          <Routes>
+            <Route path="/sign-in" element={<Login onLogin={handleLogin} />} />
 
-        <EditAvatarPopup
-          isOpen={isEditAvatarPopupOpen}
-          onClose={closeAllPopups}
-          onUpdateAvatar={handleUpdateAvatar}
-        />
+            <Route
+              path="/sign-up"
+              element={<Register onRegister={handleRegister} />}
+            />
 
-        <AddPlacePopup
-          isOpen={isAddPlacePopupOpen}
-          onClose={closeAllPopups}
-          onAddPlace={handleAddPlaceSubmit}
-        />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Main
+                    cards={cards}
+                    onCardLike={handleCardLike}
+                    onCardDelete={handleCardDelete}
+                    onEditAvatar={handleEditAvatarClick}
+                    onEditProfile={handleEditProfileClick}
+                    onAddPlace={handleAddPlaceClick}
+                    onCardClick={handleCardClick}
+                  />
+                </ProtectedRoute>
+              }
+            />
 
-        <PopupWithForm name="sure" title="Вы уверены?" buttonText="Сохранить" />
+            <Route
+              path="*"
+              element={
+                currentUser ? (
+                  <Navigate replace to="/" />
+                ) : (
+                  <Navigate replace to="/sign-in" />
+                )
+              }
+            />
+          </Routes>
 
-        <ImagePopup card={selectedCard} onClose={closeAllPopups} />
-      </div>
+          {currentUser ? <Footer /> : null}
+
+          <EditProfilePopup
+            isOpen={isEditProfilePopupOpen}
+            onClose={closeAllPopups}
+            onUpdateUser={handleUpdateUser}
+          />
+
+          <EditAvatarPopup
+            isOpen={isEditAvatarPopupOpen}
+            onClose={closeAllPopups}
+            onUpdateAvatar={handleUpdateAvatar}
+          />
+
+          <AddPlacePopup
+            isOpen={isAddPlacePopupOpen}
+            onClose={closeAllPopups}
+            onAddPlace={handleAddPlaceSubmit}
+          />
+
+          <PopupWithForm
+            name="sure"
+            title="Вы уверены?"
+            buttonText="Сохранить"
+          />
+
+          <ImagePopup card={selectedCard} onClose={closeAllPopups} />
+        </div>
+      </BrowserRouter>
     </CurrentUserContext.Provider>
   );
 };
