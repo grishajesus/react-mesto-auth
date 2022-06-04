@@ -1,7 +1,9 @@
+const currentYear = new Date().getFullYear();
+
 const Footer = () => {
   return (
     <footer className="footer">
-      <p className="footer__copyright">© 2021 Mesto Russia</p>
+      <p className="footer__copyright">© {currentYear} Mesto Russia</p>
     </footer>
   );
 };

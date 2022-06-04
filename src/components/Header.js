@@ -9,7 +9,7 @@ const Header = (props) => {
 
   const { pathname } = useLocation();
 
-  const currentUser = React.useContext(CurrentUserContext);
+  const { authUser } = React.useContext(CurrentUserContext);
 
   const handleClickLogout = (event) => {
     event.preventDefault();
@@ -18,14 +18,12 @@ const Header = (props) => {
   };
 
   const getUserInfo = () => {
-    if (currentUser) {
+    if (authUser) {
       return (
         <>
-          <p className="header__user-info__email">{currentUser.email}</p>
+          <p className="header__user-info__email">{authUser.email}</p>
           <p>
-            <a href="#" onClick={handleClickLogout}>
-              Выйти
-            </a>
+            <button onClick={handleClickLogout}>Выйти</button>
           </p>
         </>
       );
@@ -51,7 +49,7 @@ const Header = (props) => {
   };
 
   const userInfoClassName = `header__user-info ${
-    currentUser ? "header__user-info_authorized" : ""
+    authUser ? "header__user-info_authorized" : ""
   }`;
 
   return (

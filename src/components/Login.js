@@ -11,12 +11,12 @@ const INITIAL_VALUES = {
 const Login = (props) => {
   const { onLogin } = props;
 
-  const currentUser = React.useContext(CurrentUserContext);
+  const { authUser } = React.useContext(CurrentUserContext);
 
   const [values, setValues] = React.useState(INITIAL_VALUES);
   const [submitting, setSubmitting] = React.useState(false);
 
-  if (currentUser) {
+  if (authUser) {
     return <Navigate replace to="/" />;
   }
 

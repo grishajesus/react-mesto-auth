@@ -12,6 +12,7 @@ import EditProfilePopup from "./EditProfilePopup";
 import EditAvatarPopup from "./EditAvatarPopup";
 import AddPlacePopup from "./AddPlacePopup";
 import ImagePopup from "./ImagePopup";
+import InfoTooltip from "./InfoTooltip";
 import ProtectedRoute from "./ProtectedRoute";
 import Login from "./Login";
 import Register from "./Register";
@@ -25,8 +26,15 @@ const App = () => {
 
   const [isAddPlacePopupOpen, setisAddPlacePopupOpen] = React.useState(false);
 
-  const [userLoading, setUserLoading] = React.useState(true);
+  const [openInfoModal, setOpenInfoModal] = React.useState(false);
+  const [registerError, setRegisterError] = React.useState("");
+
+  const handleOpenInfoModal = () => setOpenInfoModal(true);
+  const handleCloseInfoModal = () => setOpenInfoModal(false);
+
+  const [currentAuthUser, setCurrentAuthUser] = React.useState(null);
   const [currentUser, setCurrentUser] = React.useState(null);
+  const [currentUserLoading, setCurrentUserLoading] = React.useState(true);
 
   const [cards, setCards] = React.useState([]);
   const [selectedCard, setSelectedCard] = React.useState(null);
@@ -44,21 +52,35 @@ const App = () => {
     setSelectedCard(null);
   };
 
+  const retrieveUserData = async () => {
+    const authUser = await AuthApi.getCurrentUser();
+
+    if (authUser.data) {
+      setCurrentAuthUser(authUser.data);
+
+      const user = await Api.getCurrentUser();
+
+      setCurrentUser(user);
+    }
+  };
+
   const handleLogin = async (payload) => {
     const { email, password } = payload;
 
     try {
+      setCurrentUserLoading(true);
+
       const response = await AuthApi.login(email, password);
 
       if (response.token) {
         localStorage.setItem("token", response.token);
 
-        const userResponse = await AuthApi.getCurrentUser();
-
-        setCurrentUser(userResponse.data);
+        await retrieveUserData();
       }
     } catch (error) {
       console.log(error);
+    } finally {
+      setCurrentUserLoading(false);
     }
   };
 
@@ -66,15 +88,20 @@ const App = () => {
     const { email, password } = payload;
 
     try {
+      setRegisterError("");
       await AuthApi.register(email, password);
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      setRegisterError(error.message);
+    } finally {
+      handleOpenInfoModal();
     }
   };
 
   const handleLogout = () => {
     localStorage.setItem("token", null);
 
+    setCurrentAuthUser(null);
     setCurrentUser(null);
   };
 
@@ -147,15 +174,13 @@ const App = () => {
   React.useEffect(() => {
     const fetchUserData = async () => {
       try {
-        setUserLoading(true);
+        setCurrentUserLoading(true);
 
-        const response = await AuthApi.getCurrentUser();
-
-        setCurrentUser(response.data);
+        await retrieveUserData();
       } catch (error) {
         console.error("fetchUserData error", error);
       } finally {
-        setUserLoading(false);
+        setCurrentUserLoading(false);
       }
     };
 
@@ -176,12 +201,14 @@ const App = () => {
     fetchCards();
   }, []);
 
-  if (userLoading) {
+  if (currentUserLoading) {
     return null;
   }
 
   return (
-    <CurrentUserContext.Provider value={currentUser}>
+    <CurrentUserContext.Provider
+      value={{ authUser: currentAuthUser, currentUser }}
+    >
       <BrowserRouter>
         <div className="root">
           <Header onLogout={handleLogout} />
@@ -214,7 +241,7 @@ const App = () => {
             <Route
               path="*"
               element={
-                currentUser ? (
+                currentAuthUser ? (
                   <Navigate replace to="/" />
                 ) : (
                   <Navigate replace to="/sign-in" />
@@ -223,7 +250,7 @@ const App = () => {
             />
           </Routes>
 
-          {currentUser ? <Footer /> : null}
+          {currentAuthUser ? <Footer /> : null}
 
           <EditProfilePopup
             isOpen={isEditProfilePopupOpen}
@@ -250,6 +277,12 @@ const App = () => {
           />
 
           <ImagePopup card={selectedCard} onClose={closeAllPopups} />
+
+          <InfoTooltip
+            type={!!registerError ? "error" : "success"}
+            isOpen={openInfoModal}
+            onClose={handleCloseInfoModal}
+          />
         </div>
       </BrowserRouter>
     </CurrentUserContext.Provider>

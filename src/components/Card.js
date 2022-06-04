@@ -5,7 +5,7 @@ import CurrentUserContext from "../contexts/CurrentUserContext";
 const Card = (props) => {
   const { card, onClick, onCardLike, onCardDelete } = props;
 
-  const currentUser = React.useContext(CurrentUserContext);
+  const { currentUser } = React.useContext(CurrentUserContext);
 
   const handleClick = () => onClick(card);
   const handleLikeClick = () => onCardLike(card);

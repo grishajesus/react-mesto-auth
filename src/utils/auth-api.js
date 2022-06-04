@@ -46,7 +46,10 @@ class AuthApi {
 
     const responseBody = await response.json();
 
-    return Promise.reject(`Ошибка: ${response.status} ${responseBody.message}`);
+    return Promise.reject({
+      status: response.status,
+      message: responseBody.message ?? responseBody.error,
+    });
   }
 }
 

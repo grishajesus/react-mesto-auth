@@ -6,9 +6,9 @@ import CurrentUserContext from "../contexts/CurrentUserContext";
 const ProtectedRoute = (props) => {
   const { children } = props;
 
-  const currentUser = React.useContext(CurrentUserContext);
+  const { authUser } = React.useContext(CurrentUserContext);
 
-  if (!currentUser) {
+  if (!authUser) {
     return <Navigate replace to="/sign-in" />;
   }
 

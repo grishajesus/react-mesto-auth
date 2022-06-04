@@ -14,7 +14,7 @@ const Main = (props) => {
     onCardClick,
   } = props;
 
-  const currentUser = React.useContext(CurrentUserContext);
+  const { currentUser } = React.useContext(CurrentUserContext);
 
   return (
     <main className="content">
